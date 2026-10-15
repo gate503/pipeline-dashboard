@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sales Pipeline Dashboard</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f5f6f8;--surface:#fff;--text:#14181f;--muted:#5b6472;--line:#e3e6eb;--bar:#3d4a5c;--barbg:#eceff3;
+  --red:#b42318;--red-bg:#fdeceb;--green:#087443;--green-bg:#e6f5ee;--yellow:#8a5a00;--yellow-bg:#fff4d6;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1318;--surface:#171c23;--text:#e8ebf0;--muted:#9aa4b2;--line:#28303b;--bar:#8fa1b8;--barbg:#232a34;
+    --red:#ff8a80;--red-bg:#3a1d1b;--green:#5fd39b;--green-bg:#14301f;--yellow:#f2c14e;--yellow-bg:#3a2e0c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1318;--surface:#171c23;--text:#e8ebf0;--muted:#9aa4b2;--line:#28303b;--bar:#8fa1b8;--barbg:#232a34;
+  --red:#ff8a80;--red-bg:#3a1d1b;--green:#5fd39b;--green-bg:#14301f;--yellow:#f2c14e;--yellow-bg:#3a2e0c;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+.btn{font:inherit;font-size:13px;font-weight:600;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--text);color:var(--surface);border-color:var(--text)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.kpi .label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.kpi .value{font-size:28px;font-weight:700;margin-top:6px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .note{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi.risk .value.has{color:var(--red)}
+section{margin-bottom:18px}
+h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+h2 .count{font-weight:500;color:var(--muted);font-size:13px}
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.b-red{color:var(--red);background:var(--red-bg)}
+.b-green{color:var(--green);background:var(--green-bg)}
+.b-yellow{color:var(--yellow);background:var(--yellow-bg)}
+.risk-list{display:grid;gap:8px}
+.risk-item{display:grid;grid-template-columns:4px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px 12px 0;overflow:hidden}
+.risk-item::before{content:"";align-self:stretch;background:var(--red);grid-column:1}
+.risk-main{min-width:0}
+.risk-name{font-weight:650}
+.risk-meta{color:var(--muted);font-size:13px}
+.risk-right{text-align:right}
+.risk-days{color:var(--red);font-weight:700;font-variant-numeric:tabular-nums}
+.amt{font-variant-numeric:tabular-nums;font-weight:600}
+.empty{color:var(--muted);font-size:14px;padding:14px 16px}
+.missing-note{margin-top:8px;font-size:13px;color:var(--muted)}
+.stage-row{display:grid;grid-template-columns:110px 1fr auto;gap:12px;align-items:center;padding:7px 0}
+.stage-row+.stage-row{border-top:1px solid var(--line)}
+.stage-name{font-weight:600}
+.stage-name small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.track{height:12px;background:var(--barbg);border-radius:6px;overflow:hidden}
+.fill{height:100%;background:var(--bar);border-radius:6px}
+.stage-val{font-variant-numeric:tabular-nums;font-weight:650;min-width:84px;text-align:right}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.sec{color:var(--muted);font-size:13px}
+.od{color:var(--muted);font-size:12px;margin-left:6px}
+footer{color:var(--muted);font-size:12px;margin-top:8px}
+#err{display:none;color:var(--red);background:var(--red-bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:14px}
+@media (max-width:640px){
+  .wrap{padding:16px 12px 32px}
+  .kpis{grid-template-columns:1fr}
+  .kpi{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 16px}
+  .kpi .value{margin:0;font-size:24px}
+  .kpi .note{display:none}
+  .stage-row{grid-template-columns:1fr auto;row-gap:6px}
+  .stage-row .track{grid-column:1 / -1;order:3}
+  table,thead,tbody,tr,td{display:block}
+  thead{display:none}
+  tr{padding:12px 14px;border-bottom:1px solid var(--line)}
+  tr:last-child{border-bottom:0}
+  td{border:0;padding:3px 0;display:flex;justify-content:space-between;gap:12px;align-items:center;text-align:right}
+  td::before{content:attr(data-label);color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:left}
+  td.first{display:block;text-align:left;padding-bottom:6px}
+  td.first::before{display:none}
+  .tbl-wrap{overflow:visible}
+  .card.flush{padding:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Sales Pipeline</h1>
+      <div class="sub" id="asof"></div>
+    </div>
+    <div>
+      <button class="btn primary" id="loadBtn" type="button">Upload New CSV</button>
+      <input type="file" id="file" accept=".csv,text/csv" hidden>
+    </div>
+  </header>
+  <div id="err"></div>
+
+  <div class="kpis">
+    <div class="card kpi"><div class="label">Open pipeline</div><div class="value" id="kOpen">–</div><div class="note" id="kOpenN"></div></div>
+    <div class="card kpi"><div class="label">Weighted forecast</div><div class="value" id="kW">–</div><div class="note">Amount × probability, open deals</div></div>
+    <div class="card kpi risk"><div class="label">At-risk deals</div><div class="value" id="kR">–</div><div class="note">No contact in 10+ days</div></div>
+  </div>
+
+  <section>
+    <h2>At risk <span class="count" id="riskCount"></span></h2>
+    <div id="risk"></div>
+  </section>
+
+  <section>
+    <h2>Pipeline by stage</h2>
+    <div class="card" id="stages"></div>
+  </section>
+
+  <section>
+    <h2>Priorities <span class="count">soonest close date first</span></h2>
+    <div class="card flush" id="prio"></div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script type="text/plain" id="csv">Account,Contact,Stage,Amount,Probability,CloseDate,LastContact,NextStep
+Cedarwood Logistics,Janelle Price,Negotiation,95000,80,2026-10-31,2026-10-13,Legal redlines due Friday
+Brightline Health,Omar Haddad,Discovery,28000,10,,2026-09-12,Schedule intro with ops
+Alder Freight Co,Marta Kline,Proposal,62000,50,2026-11-20,2026-10-09,Send revised pricing tiers
+Evergreen Dental Group,Sophie Lang,Closed Won,18500,100,2026-09-22,2026-09-22,Kickoff call scheduled
+Delta Ridge Energy,Tom Ayala,Demo,41000,35,2026-12-15,2026-09-18,Demo for ops leads
+Fulcrum Analytics,Ravi Menon,Proposal,73000,60,2026-11-05,,Follow up on proposal
+Helix Retail,Anton Voss,Demo,36000,25,2026-12-01,2026-10-07,Send security questionnaire
+Granite Peak Builders,Colleen Duffy,Closed Lost,54000,0,2026-09-03,2026-08-28,Revisit next fiscal year
+Ironbridge Manufacturing,Dee Okafor,Negotiation,120000,65,,2026-09-25,Get CFO on a call
+Kestrel Software,Amy Zhao,Proposal,48000,70,2026-11-14,2026-10-12,Awaiting signature from VP
+Juniper Logistics,Luis Ortega,Discovery,22000,20,2026-09-30,2026-09-02,TBD
+Alder Freight Co,Greg Hollis,Discovery,15000,15,2027-01-15,2026-10-02,Intro call with warehouse team
+</script>
+
+<script>
+(function(){
+  var STALE_DAYS = 10, sourceNote = "";
+  var STAGE_ORDER = ["lead","prospect","discovery","qualification","qualified","demo","proposal","negotiation","contract"];
+  var $ = function(id){return document.getElementById(id)};
+  var money = new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+  var dfmt = new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric"});
+
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+
+  function parseCSV(text){
+    var rows=[],row=[],f="",q=false,i=0,c;
+    text=text.replace(/^\uFEFF/,"");
+    while(i<text.length){
+      c=text[i];
+      if(q){
+        if(c==='"'){ if(text[i+1]==='"'){f+='"';i++} else q=false }
+        else f+=c;
+      } else if(c==='"') q=true;
+      else if(c===","){row.push(f);f=""}
+      else if(c==="\n"||c==="\r"){
+        if(c==="\r"&&text[i+1]==="\n")i++;
+        row.push(f);f="";
+        if(row.some(function(x){return x.trim()!==""}))rows.push(row);
+        row=[];
+      } else f+=c;
+      i++;
+    }
+    row.push(f);
+    if(row.some(function(x){return x.trim()!==""}))rows.push(row);
+    return rows;
+  }
+
+  function parseDate(s){
+    s=(s||"").trim();
+    if(!s)return null;
+    var m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+    var d=m?new Date(+m[1],+m[2]-1,+m[3]):new Date(s);
+    if(isNaN(d.getTime()))return null;
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function parseNum(s){
+    var n=parseFloat(String(s||"").replace(/[^0-9.\-]/g,""));
+    return isNaN(n)?null:n;
+  }
+  function daysBetween(a,b){return Math.round((b-a)/86400000)}
+
+  function load(text){
+    var rows=parseCSV(text);
+    if(rows.length<2)throw new Error("The CSV has no data rows.");
+    var head=rows[0].map(function(h){return h.trim().toLowerCase().replace(/[^a-z]/g,"")});
+    function col(names){for(var k=0;k<names.length;k++){var ix=head.indexOf(names[k]);if(ix>-1)return ix}return -1}
+    var ix={
+      account:col(["account","company","dealname","deal"]),
+      contact:col(["contact","contactname"]),
+      stage:col(["stage","dealstage"]),
+      amount:col(["amount","value","dealvalue"]),
+      prob:col(["probability","prob","winprobability"]),
+      close:col(["closedate","expectedclose","closingdate"]),
+      last:col(["lastcontact","lastcontacted","lastcontactdate"]),
+      next:col(["nextstep","nextsteps","nextaction"])
+    };
+    ["account","stage","amount","prob"].forEach(function(k){
+      if(ix[k]<0)throw new Error("Couldn't find a \""+k+"\" column in the CSV header.");
+    });
+    var get=function(r,k){return ix[k]>-1?(r[ix[k]]||"").trim():""};
+    var deals=rows.slice(1).map(function(r){
+      return {
+        account:get(r,"account"),contact:get(r,"contact"),stage:get(r,"stage"),
+        amount:parseNum(get(r,"amount"))||0,prob:parseNum(get(r,"prob")),
+        close:parseDate(get(r,"close")),last:parseDate(get(r,"last")),next:get(r,"next")
+      };
+    });
+    var maxP=Math.max.apply(null,deals.map(function(d){return d.prob==null?0:d.prob}));
+    var asFraction=maxP<=1;
+    deals.forEach(function(d){d.p=d.prob==null?0:(asFraction?d.prob:d.prob/100)});
+    render(deals);
+  }
+
+  function render(deals){
+    var today=new Date();today.setHours(0,0,0,0);
+    $("asof").textContent="As of "+dfmt.format(today);
+    var isClosed=function(d){return /^closed/i.test(d.stage)};
+    var open=deals.filter(function(d){return !isClosed(d)});
+    var closedN=deals.length-open.length;
+
+    open.forEach(function(d){
+      d.age=d.last?daysBetween(d.last,today):null;
+      if(d.age==null)d.status="nodate";
+      else if(d.age>=STALE_DAYS)d.status="risk";
+      else d.status="ok";
+    });
+
+    var total=open.reduce(function(s,d){return s+d.amount},0);
+    var weighted=open.reduce(function(s,d){return s+d.amount*d.p},0);
+    var risky=open.filter(function(d){return d.status==="risk"}).sort(function(a,b){return b.age-a.age});
+    var unknown=open.filter(function(d){return d.status==="nodate"});
+
+    $("kOpen").textContent=money.format(total);
+    $("kOpenN").textContent=open.length+" open deal"+(open.length===1?"":"s");
+    $("kW").textContent=money.format(weighted);
+    var kr=$("kR");kr.textContent=risky.length;kr.className="value"+(risky.length?" has":"");
+
+    // At risk
+    $("riskCount").textContent=risky.length?risky.length+" deal"+(risky.length===1?"":"s")+" · "+money.format(risky.reduce(function(s,d){return s+d.amount},0))+" at stake":"";
+    var rh="";
+    if(!risky.length){
+      rh='<div class="card empty">No open deals have gone '+STALE_DAYS+'+ days without contact.</div>';
+    } else {
+      rh='<div class="risk-list">'+risky.map(function(d){
+        return '<div class="risk-item"><span></span><div class="risk-main">'+
+          '<div class="risk-name">'+esc(d.account)+(d.contact?' <span class="risk-meta">· '+esc(d.contact)+'</span>':'')+'</div>'+
+          '<div class="risk-meta">'+esc(d.stage)+' · Last contact '+dfmt.format(d.last)+(d.next?' · Next: '+esc(d.next):'')+'</div></div>'+
+          '<div class="risk-right"><div class="risk-days">'+d.age+' days</div><div class="amt">'+money.format(d.amount)+'</div></div></div>';
+      }).join("")+'</div>';
+    }
+    if(unknown.length){
+      rh+='<div class="missing-note"><span class="badge b-yellow">No date</span> '+unknown.length+' open deal'+(unknown.length===1?" has":"s have")+' no last-contact date, so staleness can\u2019t be assessed: '+unknown.map(function(d){return esc(d.account)}).join(", ")+'.</div>';
+    }
+    $("risk").innerHTML=rh;
+
+    // Stages
+    var map={};
+    open.forEach(function(d){
+      var k=d.stage||"(no stage)";
+      (map[k]=map[k]||{name:k,val:0,n:0});map[k].val+=d.amount;map[k].n++;
+    });
+    var stages=Object.keys(map).map(function(k){return map[k]});
+    var rank=function(n){var i=STAGE_ORDER.indexOf(n.toLowerCase());return i<0?99:i};
+    stages.sort(function(a,b){return rank(a.name)-rank(b.name)||b.val-a.val});
+    var max=Math.max.apply(null,stages.map(function(s){return s.val}).concat([1]));
+    $("stages").innerHTML=stages.length?stages.map(function(s){
+      return '<div class="stage-row"><div class="stage-name">'+esc(s.name)+'<small>'+s.n+' deal'+(s.n===1?"":"s")+'</small></div>'+
+        '<div class="track"><div class="fill" style="width:'+Math.max(2,s.val/max*100).toFixed(1)+'%"></div></div>'+
+        '<div class="stage-val">'+money.format(s.val)+'</div></div>';
+    }).join(""):'<div class="empty">No open deals.</div>';
+
+    // Priorities
+    var pr=open.slice().sort(function(a,b){
+      if(!a.close&&!b.close)return b.amount-a.amount;
+      if(!a.close)return 1;if(!b.close)return -1;
+      return a.close-b.close||b.amount-a.amount;
+    });
+    var noDate='<span class="badge b-yellow">No date</span>';
+    var stBadge={risk:'<span class="badge b-red">At risk</span>',ok:'<span class="badge b-green">Healthy</span>',nodate:noDate};
+    $("prio").innerHTML=pr.length?'<div class="tbl-wrap"><table><thead><tr><th>Account</th><th>Close date</th><th class="num">Amount</th><th>Stage</th><th>Status</th><th>Next step</th></tr></thead><tbody>'+
+      pr.map(function(d){
+        var cd=d.close?dfmt.format(d.close)+(d.close<today?'<span class="od">past due</span>':''):noDate;
+        return '<tr><td class="first"><strong>'+esc(d.account)+'</strong>'+(d.contact?'<div class="sec">'+esc(d.contact)+'</div>':'')+'</td>'+
+          '<td data-label="Close date">'+cd+'</td>'+
+          '<td class="num" data-label="Amount"><span class="amt">'+money.format(d.amount)+'</span></td>'+
+          '<td data-label="Stage">'+esc(d.stage)+'</td>'+
+          '<td data-label="Status">'+stBadge[d.status]+'</td>'+
+          '<td data-label="Next step">'+(d.next?esc(d.next):'<span class="sec">\u2014</span>')+'</td></tr>';
+      }).join("")+'</tbody></table></div>':'<div class="empty">No open deals.</div>';
+
+    $("foot").textContent=closedN?closedN+" closed deal"+(closedN===1?"":"s")+" excluded from all figures. ":"";
+    $("foot").textContent+="At risk = open deal with "+STALE_DAYS+"+ days since last contact."+(sourceNote?" "+sourceNote:"");
+  }
+
+  function showErr(m){var e=$("err");e.textContent=m;e.style.display=m?"block":"none"}
+  function run(text){try{showErr("");load(text);return true}catch(e){showErr(e.message);return false}}
+
+  $("loadBtn").addEventListener("click",function(){$("file").click()});
+  $("file").addEventListener("change",function(ev){
+    var f=ev.target.files&&ev.target.files[0];if(!f)return;
+    var r=new FileReader();r.onload=function(){var t=String(r.result),prev=sourceNote;sourceNote="Data: "+f.name+", uploaded "+dfmt.format(new Date())+".";if(run(t)){try{localStorage.setItem("pipelineCsv",JSON.stringify({t:t,n:sourceNote}))}catch(e){}}else{sourceNote=prev}};r.readAsText(f);ev.target.value="";
+  });
+  var saved=null;try{saved=JSON.parse(localStorage.getItem("pipelineCsv")||"null")}catch(e){}
+  if(saved&&saved.t){sourceNote=saved.n||"";if(!run(saved.t)){sourceNote="Data: built-in sample-pipeline.csv.";run($("csv").textContent)}}
+  else{sourceNote="Data: built-in sample-pipeline.csv.";run($("csv").textContent)}
+})();
+</script>
+</body>
+</html>
