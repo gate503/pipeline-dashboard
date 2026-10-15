@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Deal Calculator</title>
+<style>
+:root{
+  --bg:#f4f6f9;--card:#fff;--text:#14213d;--muted:#6b7686;--line:#e3e8ef;--accent:#2f5bea;
+  --green:#16a34a;--amber:#f59e0b;--red:#dc2626;--track:#e9edf3;--soft:#f7f9fc;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e131b;--card:#171e29;--text:#e8edf5;--muted:#93a0b3;--line:#263041;--accent:#6c8cff;--track:#263041;--soft:#1b2330;}}
+:root[data-theme="dark"]{--bg:#0e131b;--card:#171e29;--text:#e8edf5;--muted:#93a0b3;--line:#263041;--accent:#6c8cff;--track:#263041;--soft:#1b2330;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.4}
+.wrap{max-width:720px;margin:0 auto;padding:32px 20px 48px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:14px;margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.field{position:relative}
+.field input{width:100%;font:inherit;font-size:18px;font-weight:600;color:var(--text);background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+.field input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.field .pre{padding-left:28px}.field .suf{padding-right:30px}
+.field span{position:absolute;bottom:12px;color:var(--muted);font-weight:600}
+.field .l{left:12px}.field .r{right:12px}
+.sliderhead{display:flex;justify-content:space-between;align-items:baseline;margin-top:22px}
+.sliderhead b{font-size:26px;letter-spacing:-.02em}
+input[type=range]{width:100%;margin:10px 0 2px;accent-color:var(--accent);height:28px}
+.ticks{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:520px){.stats{grid-template-columns:1fr}}
+.stat .k{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stat .v{font-size:30px;font-weight:700;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat .n{font-size:13px;color:var(--muted);margin-top:2px}
+.gh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.pill{font-size:13px;font-weight:700;padding:5px 12px;border-radius:999px;color:#fff;background:var(--green);transition:background .2s}
+.gauge{position:relative;height:12px;border-radius:999px;background:linear-gradient(90deg,var(--green) 0 20%,var(--amber) 20% 37.5%,var(--red) 37.5% 100%);}
+.marker{position:absolute;top:-5px;width:6px;height:22px;border-radius:3px;background:var(--text);border:2px solid var(--card);transform:translateX(-50%);transition:left .08s}
+.gl{position:relative;height:16px;font-size:12px;color:var(--muted);margin-top:8px}.gl span{position:absolute;transform:translateX(-50%)}
+.gdesc{font-size:14px;color:var(--muted);margin:12px 0 0}
+.cost{border-left:4px solid var(--green);background:var(--soft);transition:border-color .2s}
+.cost p{margin:0;font-size:15px}
+.cost strong{font-variant-numeric:tabular-nums}
+.ann .big{font-size:34px;font-weight:700;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums;transition:color .2s}
+.ann .n{font-size:14px;color:var(--muted);margin-top:6px}
+.recover{text-align:center;font-size:16px;margin:20px 0 0}
+.recover strong{font-size:20px;font-variant-numeric:tabular-nums}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Deal Calculator</h1>
+  <p class="sub">See what a discount does to the price, your commission, and your payout.</p>
+
+  <div class="card">
+    <div class="row">
+      <div><label for="size">Deal size (list price)</label>
+        <div class="field"><span class="l">$</span><input id="size" class="pre" type="number" min="0" step="100" value="75000" inputmode="decimal"></div></div>
+      <div><label for="rate">Commission rate</label>
+        <div class="field"><input id="rate" class="suf" type="number" min="0" max="100" step="0.1" value="10" inputmode="decimal"><span class="r">%</span></div></div>
+    </div>
+    <div class="sliderhead"><label for="disc" style="margin:0">Discount</label><b id="discOut">15%</b></div>
+    <input id="disc" type="range" min="0" max="40" step="1" value="15">
+    <div class="ticks"><span>0%</span><span>10%</span><span>20%</span><span>30%</span><span>40%</span></div>
+  </div>
+
+  <div class="stats card">
+    <div class="stat"><div class="k">Price after discount</div><div class="v" id="price">–</div><div class="n" id="priceN"></div></div>
+    <div class="stat"><div class="k">Your commission</div><div class="v" id="comm">–</div><div class="n" id="commN"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="gh"><label style="margin:0">Discount aggressiveness</label><span class="pill" id="pill">Healthy</span></div>
+    <div class="gauge"><div class="marker" id="marker"></div></div>
+    <div class="gl"><span style="left:0;transform:none">0%</span><span style="left:20%">8%</span><span style="left:37.5%">15%</span><span style="right:0;transform:none">40%</span></div>
+    <p class="gdesc" id="gdesc"></p>
+  </div>
+
+  <div class="card cost" id="costCard"><p id="cost"></p></div>
+
+  <div class="card ann">
+    <label style="margin:0">Annual impact</label>
+    <div class="big" id="annLost">–</div>
+    <div class="n" id="annN"></div>
+  </div>
+
+  <p class="recover" id="recover"></p>
+
+  <p class="foot">Gauge: green 0–8% · amber 9–15% · red above 15%</p>
+</div>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var fmt=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
+  var fmt2=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2});
+  function money(n){return Math.abs(n)>=1000?fmt.format(n):fmt2.format(n)}
+  function num(el){var v=parseFloat(el.value);return isFinite(v)&&v>0?v:0}
+  function level(d){
+    if(d<=8)return{c:'var(--green)',t:'Healthy',d:'Within normal range. Easy to defend to finance.'};
+    if(d<=15)return{c:'var(--amber)',t:'Moderate',d:'Noticeable give. Worth trading for term, volume, or a quick close.'};
+    return{c:'var(--red)',t:'Aggressive',d:'Deep discount. Expect approval and push for something in return.'};
+  }
+  function update(){
+    var size=num($('size')),rate=Math.min(num($('rate')),100),d=parseFloat($('disc').value);
+    var price=size*(1-d/100),comm=price*rate/100,full=size*rate/100,lost=full-comm,L=level(d);
+    $('discOut').textContent=d+'%';
+    $('price').textContent=money(price);
+    $('priceN').textContent=d>0?money(size-price)+' off '+money(size)+' list':'Full list price';
+    $('comm').textContent=money(comm);
+    $('commN').textContent='At '+rate+'% of discounted price';
+    $('pill').textContent=L.t;$('pill').style.background=L.c;
+    $('marker').style.left=(d/40*100)+'%';
+    $('gdesc').textContent=L.d;
+    $('costCard').style.borderLeftColor=L.c;
+    $('cost').innerHTML=d===0
+      ?'No discount: you keep the full <strong>'+money(full)+'</strong> commission at list price.'
+      :'This discount costs you <strong>'+money(lost)+'</strong> in commission ('+money(full)+' at list vs. '+money(comm)+' discounted, a '+d+'% reduction).';
+    var yl=lost*40,yf=full*40,yc=comm*40;
+    $('annLost').textContent=d===0?money(0):'−'+money(yl);
+    $('annLost').style.color=d===0?'var(--text)':L.c;
+    var need=full>0?Math.ceil(yl/full-1e-9):0;
+    $('recover').innerHTML='At this discount, you need <strong>'+need+'</strong> additional deal'+(need===1?'':'s')+' at list price to recover the lost commission.';
+    $('annN').textContent=d===0
+      ?'No discount, no commission lost. At 10 deals per quarter (40 per year) you earn '+money(yf)+'.'
+      :'Commission lost per year at 10 deals per quarter (40 per year): '+money(yf)+' at list vs. '+money(yc)+' with a '+d+'% discount.';
+  }
+  ['size','rate','disc'].forEach(function(i){$(i).addEventListener('input',update)});
+  update();
+})();
+</script>
+</body>
+</html>
